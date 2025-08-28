@@ -1,34 +1,39 @@
-# -*- coding: utf-8 -*-
-
-
-import pdb
-import math
-import torch
 import numpy as np
 import multiprocessing as mp
 from .metric import *
 
-
-def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i, sens=None, indicators='[\'ndcg\', '
-                                                                                                      '\'recall\']',
-                     topks='[10,30]', num_workers=4,sens_age=None):
+def ranking_evaluate(user_emb, item_emb, n_users, n_items, train_u2i, test_u2i,
+                     sens=None, indicators="['ndcg','recall']", topks='[10,30]', num_workers=4):
+    # Convert string representations to lists
     indicators = eval(indicators)
     topks = eval(topks)
+
+    # Compute score matrix
     scores = np.matmul(user_emb, item_emb.T)
+
+    # Evaluate metrics
     perf_info, topk_items = eval_accelerate(scores, n_users, train_u2i, test_u2i, indicators, topks, num_workers)
     perf_info = np.mean(perf_info, axis=0)
 
+    # Aggregate results
     res = {}
     k = 0
     for ind in indicators:
         for topk in topks:
-            res[ind + '@' + str(topk)] = perf_info[k]
-            k = k + 1
+            res[f'{ind}@{topk}'] = perf_info[k]
+            k += 1
 
+    # Fairness metrics
     if sens is not None:
         for topk in topks:
-            res['js_dp@' + str(topk)], res['js_eo@' + str(topk)] = js_topk(topk_items, sens, test_u2i, n_users, n_items,
-                                                                           topk)          
+            res[f'js_dp@{topk}'], res[f'js_eo@{topk}'] = js_topk(topk_items, sens, test_u2i, n_users, n_items, topk)
+
+    # Print results
+    count = 0
+    for key, value in res.items():
+        metric = f'{key}: {value:.6f}'
+        print(f'{metric:<23}', end='' if count % len(topks) == 0 else '\n')
+        count += 1
 
     return res
 

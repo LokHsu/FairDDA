@@ -1,23 +1,16 @@
-# -*- coding: utf-8 -*-
-
-
-
-import torch
 import torch.nn as nn
 from .lightgcn import LightGCN
-from .semi_gcn import SGCN
-import torch.nn.functional as F
+
+from params import args
 
 class SemiGCN(nn.Module):
-    def __init__(self, n_users, n_items, norm_adj, emb_size, n_layers, device, nb_classes):
+    def __init__(self, n_users, n_items, n_sens, norm_adj):
         super(SemiGCN, self).__init__()
-        self.body = LightGCN(n_users, n_items, norm_adj, emb_size, n_layers, device)
-        self.fc = nn.Linear(emb_size, nb_classes)
-        self.to(device)
+        self.gcn = LightGCN(n_users, n_items, norm_adj)
+        self.fc = nn.Linear(args.emb_size, n_sens)
 
     def forward(self, ):
-        e_su, e_si = self.body()
-        su = self.fc(e_su)
-        si = self.fc(e_si)
-        return e_su, e_si, su, si
-
+        e_su, e_si = self.gcn()
+        s_u = self.fc(e_su)
+        s_i = self.fc(e_si)
+        return e_su, e_si, s_u, s_i
