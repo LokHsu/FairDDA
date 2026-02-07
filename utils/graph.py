@@ -30,7 +30,7 @@ class Graph(object):
 
             probability_pyro = RelaxedBernoulliStraightThrough(temperature=1.0, probs=probability).rsample()
             aug_train_u2i[u] = pos_i[probability_pyro.bool()].cpu().tolist()
-            return self.get_norm_adj(aug_train_u2i)
+        return self.get_norm_adj(aug_train_u2i)
 
 
     def get_norm_adj(self, train_u2i):
